@@ -7,11 +7,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="SmartHomeLibrary\Communications\**" />
+    <Compile Remove="SmartHomeLibrary\PacketsDefinition\**" />
+    <Compile Remove="SmartHomeLibrary\Packets\**" />
+    <Content Remove="SmartHomeLibrary\Communications\**" />
+    <Content Remove="SmartHomeLibrary\PacketsDefinition\**" />
+    <Content Remove="SmartHomeLibrary\Packets\**" />
+    <EmbeddedResource Remove="SmartHomeLibrary\Communications\**" />
+    <EmbeddedResource Remove="SmartHomeLibrary\PacketsDefinition\**" />
+    <EmbeddedResource Remove="SmartHomeLibrary\Packets\**" />
+    <None Remove="SmartHomeLibrary\Communications\**" />
+    <None Remove="SmartHomeLibrary\PacketsDefinition\**" />
+    <None Remove="SmartHomeLibrary\Packets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Model\Common.cs" />
-    <Compile Remove="SmartHomeLibrary\Communications\CommandsBootloader.cs" />
-    <Compile Remove="SmartHomeLibrary\Communications\CommandsCentralUnit.cs" />
     <Compile Remove="SmartHomeLibrary\Database.cs" />
     <Compile Remove="SmartHomeLibrary\DatabaseModel.cs" />
+    <Compile Remove="SmartHomeLibrary\DeviceClass.cs" />
+    <Compile Remove="SmartHomeLibrary\DeviceTreeNode.cs" />
+    <Compile Remove="SmartHomeLibrary\UpgradeProgram.cs" />
   </ItemGroup>
 
   <ItemGroup>

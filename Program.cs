@@ -1,3 +1,4 @@
+using InteligentnyDomRelay;
 using InteligentnyDomWebViewer.Model;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,13 @@ if (app.Environment.IsDevelopment())
 	app.UseDeveloperExceptionPage();
 	app.UseStatusCodePages();
 }
+
+CommunicationService communicationService = new(app.Services);
+
+Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
+{
+	communicationService.ExitThread = true;
+};
 
 app.UseStaticFiles();
 

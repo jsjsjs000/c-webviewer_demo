@@ -1,271 +1,301 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using InteligentnyDomWebViewer.Model;
 using Microsoft.EntityFrameworkCore;
 using SmartHomeTool.SmartHomeLibrary;
-using static SmartHomeTool.SmartHomeLibrary.Commands;
-using static SmartHomeTool.SmartHomeLibrary.Communication;
+//using static SmartHomeTool.SmartHomeLibrary.Commands;
+//using static SmartHomeTool.SmartHomeLibrary.Communication;
 
 namespace InteligentnyDomRelay
 {
-	internal class CommunicationService : Communication
+	internal class CommunicationService : ThreadClass //: Communication
 	{
-		public Devices? cu;
+		const int Port = 28501;    // object 1 - Adam Kukuc
+		const int SocketTimeout = 5000;
+		const int BufferSize = 4 * 1024 * 1024;
 
-		public CommunicationService(Devices cu) : base()
+		public Devices cu;
+		private readonly WebDbContext databaseContext;
+		TcpListener tcpListener;
+		public List<SocketItem> sockets = new List<SocketItem>();
+
+		public CommunicationService(IServiceProvider serviceProvider) : base()
 		{
-			this.cu = cu;
+			var scope = serviceProvider.CreateScope();
+			databaseContext = scope.ServiceProvider.GetRequiredService<WebDbContext>();
+
+			cu = databaseContext.Devices
+					.Where(n => n.Active &&
+											(n.HardwareType2 == DeviceVersion.HardwareType2Enum.CU ||
+											 n.HardwareType2 == DeviceVersion.HardwareType2Enum.CU_WR))
+					.First();
+
+			Connect();
+		}
+
+		void Connect()
+		{
+			tcpListener = new TcpListener(IPAddress.Any, Port);
+			tcpListener.Server.Blocking = false;
+			tcpListener.Start();
+			tcpListener.BeginAcceptTcpClient(OnAcceptTcpClient, tcpListener);
 		}
 
 		protected override void ThreadProc()
 		{
 			ExitedThread = false;
 			Common.SetDateFormat();
-			this.CanLogPackets = true;
-			this.CanLogWrongPackets = true;
-			byte[] received = Array.Empty<byte>();
+			//this.CanLogPackets = true;
+			//this.CanLogWrongPackets = true;
+			//byte[] received = Array.Empty<byte>();
 			//DateTime lastReceived = new();
 			//DateTime lastPool = new();
-			DateTime lastCommandSend = new();
-			DateTime lastWriteStatus = new();
+			//DateTime lastCommandSend = new();
+			//DateTime lastWriteStatus = new();
 
 			while (!ExitThread)
 			{
 				try
 				{
-					bool isConnected = IsConnected();
-					while (!isConnected && !ExitThread)
-					{
-						if (Connect())
-							break;
-						else
-						{
-							using DatabaseContext databaseContext = new();
-							var dcu = new DevicesCu()
-							{
-								Address = cu.Address,
-								LastUpdated = DateTime.Now,
-								Error = true,
-								ErrorFrom = DateTime.Now, // $$
-								Uptime = uint.MaxValue,
-							};
-							databaseContext.DevicesCu.Update(dcu);
-							databaseContext.SaveChanges();
+#region
+					//bool isConnected = IsConnected();
+					//while (!isConnected && !ExitThread)
+					//{
+					//	if (Connect())
+					//		break;
+					//	else
+					//	{
+					//		//using DatabaseContext databaseContext = new();
+					//		var dcu = new DevicesCu()
+					//		{
+					//			Address = cu.Address,
+					//			LastUpdated = DateTime.Now,
+					//			Error = true,
+					//			ErrorFrom = DateTime.Now, // $$
+					//			Uptime = uint.MaxValue,
+					//		};
+					//		databaseContext.DevicesCu.Update(dcu);
+					//		databaseContext.SaveChanges();
 
-							for (int i = 0; i < 20 && !ExitThread; i++)
-								Thread.Sleep(50);
-						}
-					}
+					//		for (int i = 0; i < 20 && !ExitThread; i++)
+					//			Thread.Sleep(50);
+					//	}
+					//}
+#endregion
 
 					if (ExitThread)
 						continue;
 
-					if (DateTime.Now.Subtract(lastCommandSend).TotalMilliseconds >= 20 * 1000)
-					{
-						uint address = cu.Address;
+#region
+//					if (DateTime.Now.Subtract(lastCommandSend).TotalMilliseconds >= 20 * 1000)
+//					{
+//						uint address = cu.Address;
 
-//bool ok = cmd.SendGetDeviceVersion(1, 0x08080808, address, out Commands.DeviceVersion version);
-//Console.WriteLine($"{address:x8} {ok} {version.Uptime}");
+////bool ok = cmd.SendGetDeviceVersion(1, 0x08080808, address, out Commands.DeviceVersion version);
+////Console.WriteLine($"{address:x8} {ok} {version.Uptime}");
 
-						List<Commands.CentralUnitStatus> allStatuses = new();
-						int fromItem = 0;
-						int itemsCount = 0;
-						DateTime nowWithoutSeconds = Common.DateTimeWithoutSeconds(DateTime.Now);
-						bool writeHistory = Math.Abs(nowWithoutSeconds.Subtract(Common.DateTimeWithoutSeconds(lastWriteStatus)).TotalSeconds) >= 1;
-						do
-						{
-							using DatabaseContext databaseContext = new();
+//						List<Commands.CentralUnitStatus> allStatuses = new();
+//						int fromItem = 0;
+//						int itemsCount = 0;
+//						DateTime nowWithoutSeconds = Common.DateTimeWithoutSeconds(DateTime.Now);
+//						bool writeHistory = Math.Abs(nowWithoutSeconds.Subtract(Common.DateTimeWithoutSeconds(lastWriteStatus)).TotalSeconds) >= 1;
+//						do
+//						{
+//							//using DatabaseContext databaseContext = new();
 
-							if (cmd.SendGetCentralUnitStatus(1, 0x08080808, address,
-									out List<CentralUnitStatus> statuses,
-									out List<HeatingVisualComponent> heatingVisualComponents,
-									fromItem, true, out itemsCount, out uint cuUptime, out float cuVin))
-							{
-Console.WriteLine($"{DateTime.Now} cu: {address:x8} ok - from: {fromItem}, count: {statuses.Count} + {heatingVisualComponents.Count}");
+//							if (cmd.SendGetCentralUnitStatus(1, 0x08080808, address,
+//									out List<CentralUnitStatus> statuses,
+//									out List<HeatingVisualComponent> heatingVisualComponents,
+//									fromItem, true, out itemsCount, out uint cuUptime, out float cuVin))
+//							{
+//Console.WriteLine($"{DateTime.Now} cu: {address:x8} ok - from: {fromItem}, count: {statuses.Count} + {heatingVisualComponents.Count}");
 
-								allStatuses.AddRange(statuses);
+//								allStatuses.AddRange(statuses);
 
-								if (fromItem == 0)
-								{
-									var dcu = new DevicesCu()
-									{
-										Address = address,
-										LastUpdated = DateTime.Now,
-										Error = false,
-										ErrorFrom = null,
-										Uptime = cuUptime,
-										Vin = cuVin,
-									};
-									databaseContext.DevicesCu.Update(dcu);
-									databaseContext.Entry(dcu).Property(x => x.Name).IsModified = false;
-									databaseContext.SaveChanges();
-								}
+//								if (fromItem == 0)
+//								{
+//									var dcu = new DevicesCu()
+//									{
+//										Address = address,
+//										LastUpdated = DateTime.Now,
+//										Error = false,
+//										ErrorFrom = null,
+//										Uptime = cuUptime,
+//										Vin = cuVin,
+//									};
+//									databaseContext.DevicesCu.Update(dcu);
+//									databaseContext.Entry(dcu).Property(x => x.Name).IsModified = false;
+//									databaseContext.SaveChanges();
+//								}
 
-								foreach (Commands.CentralUnitStatus status in statuses)
-								{
-//Console.WriteLine($"  address: {status.address:x8}");
-									if (status is Commands.TemperatureStatus temperatureStatus)
-									{
-										for (byte i = 0; i < temperatureStatus.temperatures?.Length; i++)
-											if (databaseContext.DevicesTemperatures.
-													Where(t => t.Address == temperatureStatus.address && t.Segment == i).
-													Any())
-											{
-												if (writeHistory)
-												{
-													var ht = new HistoryTemperatures()
-													{
-														Dt = nowWithoutSeconds,
-														Address = temperatureStatus.address,
-														Segment = i,
-														Temperature = temperatureStatus.temperatures[i],
-														Error = temperatureStatus.error,
-														Vin = temperatureStatus.vin,
-													};
-													databaseContext.HistoryTemperatures.Add(ht);
-													databaseContext.SaveChanges();
-												}
+//								foreach (Commands.CentralUnitStatus status in statuses)
+//								{
+////Console.WriteLine($"  address: {status.address:x8}");
+//									if (status is Commands.TemperatureStatus temperatureStatus)
+//									{
+//										for (byte i = 0; i < temperatureStatus.temperatures?.Length; i++)
+//											if (databaseContext.DevicesTemperatures.
+//													Where(t => t.Address == temperatureStatus.address && t.Segment == i).
+//													Any())
+//											{
+//												if (writeHistory)
+//												{
+//													var ht = new HistoryTemperatures()
+//													{
+//														Dt = nowWithoutSeconds,
+//														Address = temperatureStatus.address,
+//														Segment = i,
+//														Temperature = temperatureStatus.temperatures[i],
+//														Error = temperatureStatus.error,
+//														Vin = temperatureStatus.vin,
+//													};
+//													databaseContext.HistoryTemperatures.Add(ht);
+//													databaseContext.SaveChanges();
+//												}
 
-												var dt = new DevicesTemperatures()
-												{
-													Address = temperatureStatus.address,
-													Segment = i,
-													LastUpdated = DateTime.Now,
-													Temperature = temperatureStatus.temperatures[i],
-													Error = temperatureStatus.error,
-													ErrorFrom = null,
-													Uptime = temperatureStatus.uptime,
-													Vin = temperatureStatus.vin,
-												};
-												databaseContext.DevicesTemperatures.Update(dt);
-												databaseContext.Entry(dt).Property(x => x.Name).IsModified = false;
-												databaseContext.SaveChanges();
-											}
-									}
-									else if (status is Commands.RelayStatus relaysStatus)
-									{
-										for (byte i = 0; i < relaysStatus.relaysStates?.Length; i++)
-											if (databaseContext.DevicesRelays.
-													Where(t => t.Address == relaysStatus.address && t.Segment == i).
-													Any())
-											{
-												if (writeHistory)
-												{
-													var hr = new HistoryRelays()
-													{
-														Dt = nowWithoutSeconds,
-														Address = relaysStatus.address,
-														Segment = i,
-														Relay = relaysStatus.relaysStates[i],
-														Error = relaysStatus.error,
-														Vin = relaysStatus.vin,
-													};
-													databaseContext.HistoryRelays.Add(hr);
-													databaseContext.SaveChanges();
-												}
+//												var dt = new DevicesTemperatures()
+//												{
+//													Address = temperatureStatus.address,
+//													Segment = i,
+//													LastUpdated = DateTime.Now,
+//													Temperature = temperatureStatus.temperatures[i],
+//													Error = temperatureStatus.error,
+//													ErrorFrom = null,
+//													Uptime = temperatureStatus.uptime,
+//													Vin = temperatureStatus.vin,
+//												};
+//												databaseContext.DevicesTemperatures.Update(dt);
+//												databaseContext.Entry(dt).Property(x => x.Name).IsModified = false;
+//												databaseContext.SaveChanges();
+//											}
+//									}
+//									else if (status is Commands.RelayStatus relaysStatus)
+//									{
+//										for (byte i = 0; i < relaysStatus.relaysStates?.Length; i++)
+//											if (databaseContext.DevicesRelays.
+//													Where(t => t.Address == relaysStatus.address && t.Segment == i).
+//													Any())
+//											{
+//												if (writeHistory)
+//												{
+//													var hr = new HistoryRelays()
+//													{
+//														Dt = nowWithoutSeconds,
+//														Address = relaysStatus.address,
+//														Segment = i,
+//														Relay = relaysStatus.relaysStates[i],
+//														Error = relaysStatus.error,
+//														Vin = relaysStatus.vin,
+//													};
+//													databaseContext.HistoryRelays.Add(hr);
+//													databaseContext.SaveChanges();
+//												}
 
-												var dr = new DevicesRelays()
-												{
-													Address = relaysStatus.address,
-													Segment = i,
-													LastUpdated = DateTime.Now,
-													Relay = relaysStatus.relaysStates[i],
-													Error = relaysStatus.error,
-													ErrorFrom = null,
-													Uptime = relaysStatus.uptime,
-													Vin = relaysStatus.vin,
-												};
-												databaseContext.DevicesRelays.Update(dr);
-												databaseContext.Entry(dr).Property(x => x.Name).IsModified = false;
-												databaseContext.SaveChanges();
-											}
-									}
-								}
+//												var dr = new DevicesRelays()
+//												{
+//													Address = relaysStatus.address,
+//													Segment = i,
+//													LastUpdated = DateTime.Now,
+//													Relay = relaysStatus.relaysStates[i],
+//													Error = relaysStatus.error,
+//													ErrorFrom = null,
+//													Uptime = relaysStatus.uptime,
+//													Vin = relaysStatus.vin,
+//												};
+//												databaseContext.DevicesRelays.Update(dr);
+//												databaseContext.Entry(dr).Property(x => x.Name).IsModified = false;
+//												databaseContext.SaveChanges();
+//											}
+//									}
+//								}
 
-								foreach (HeatingVisualComponent heatingComponent in heatingVisualComponents)
-								{
-									bool ok = false;
-									bool relay = false;
-									foreach (Commands.CentralUnitStatus status in allStatuses)
-										if (status is Commands.RelayStatus relaysStatus && relaysStatus.relaysStates != null &&
-												relaysStatus.address == heatingComponent.DeviceItem.Address)
-										{
-											relay = relaysStatus.relaysStates[heatingComponent.DeviceSegment];
-											ok = true;
-											break;
-										}
+//								foreach (HeatingVisualComponent heatingComponent in heatingVisualComponents)
+//								{
+//									bool ok = false;
+//									bool relay = false;
+//									foreach (Commands.CentralUnitStatus status in allStatuses)
+//										if (status is Commands.RelayStatus relaysStatus && relaysStatus.relaysStates != null &&
+//												relaysStatus.address == heatingComponent.DeviceItem.Address)
+//										{
+//											relay = relaysStatus.relaysStates[heatingComponent.DeviceSegment];
+//											ok = true;
+//											break;
+//										}
 
-									if (writeHistory)
-									{
-										var hh = new HistoryHeating()
-										{
-											Dt = nowWithoutSeconds,
-											Address = heatingComponent.DeviceItem.Address,
-											Segment = heatingComponent.DeviceSegment,
-											Mode = (byte)(heatingComponent.Control.HeatingMode + 1),
-										};
-										if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
-											hh.SettingTemperature = heatingComponent.Control.DayTemperature;
-										else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
-											hh.SettingTemperature = heatingComponent.Control.ManualTemperature;
-										hh.Relay = relay;
-										if (ok)
-											databaseContext.HistoryHeating.Add(hh);
-									}
+//									if (writeHistory)
+//									{
+//										var hh = new HistoryHeating()
+//										{
+//											Dt = nowWithoutSeconds,
+//											Address = heatingComponent.DeviceItem.Address,
+//											Segment = heatingComponent.DeviceSegment,
+//											Mode = (byte)(heatingComponent.Control.HeatingMode + 1),
+//										};
+//										if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
+//											hh.SettingTemperature = heatingComponent.Control.DayTemperature;
+//										else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
+//											hh.SettingTemperature = heatingComponent.Control.ManualTemperature;
+//										hh.Relay = relay;
+//										if (ok)
+//											databaseContext.HistoryHeating.Add(hh);
+//									}
 
-									var dh = new DevicesHeating()
-									{
-										Address = heatingComponent.DeviceItem.Address,
-										Segment = heatingComponent.DeviceSegment,
-										Mode = (byte)(heatingComponent.Control.HeatingMode + 1),
-										LastUpdated = nowWithoutSeconds,
-									};
-									if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
-										dh.SettingTemperature = heatingComponent.Control.DayTemperature;
-									else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
-										dh.SettingTemperature = heatingComponent.Control.ManualTemperature;
-									dh.Relay = relay;
-									if (ok)
-									{
-										databaseContext.DevicesHeatings.Update(dh);
-										databaseContext.Entry(dh).Property(x => x.Name).IsModified = false;
-										databaseContext.SaveChanges();
-									}
-								}
+//									var dh = new DevicesHeating()
+//									{
+//										Address = heatingComponent.DeviceItem.Address,
+//										Segment = heatingComponent.DeviceSegment,
+//										Mode = (byte)(heatingComponent.Control.HeatingMode + 1),
+//										LastUpdated = nowWithoutSeconds,
+//									};
+//									if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
+//										dh.SettingTemperature = heatingComponent.Control.DayTemperature;
+//									else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
+//										dh.SettingTemperature = heatingComponent.Control.ManualTemperature;
+//									dh.Relay = relay;
+//									if (ok)
+//									{
+//										databaseContext.DevicesHeatings.Update(dh);
+//										databaseContext.Entry(dh).Property(x => x.Name).IsModified = false;
+//										databaseContext.SaveChanges();
+//									}
+//								}
 
-								fromItem += statuses.Count + heatingVisualComponents.Count;
-							}
-							else
-							{
-								var dcu = new DevicesCu()
-								{
-									Address = address,
-									LastUpdated = DateTime.Now,
-									Error = true,
-									ErrorFrom = DateTime.Now, // $$
-									Uptime = uint.MaxValue,
-									Vin = 0,
-								};
-								databaseContext.DevicesCu.Update(dcu);
-								databaseContext.SaveChanges();
-								lastCommandSend = DateTime.Now;
-								break;
-							}
+//								fromItem += statuses.Count + heatingVisualComponents.Count;
+//							}
+//							else
+//							{
+//								var dcu = new DevicesCu()
+//								{
+//									Address = address,
+//									LastUpdated = DateTime.Now,
+//									Error = true,
+//									ErrorFrom = DateTime.Now, // $$
+//									Uptime = uint.MaxValue,
+//									Vin = 0,
+//								};
+//								databaseContext.DevicesCu.Update(dcu);
+//								databaseContext.SaveChanges();
+//								lastCommandSend = DateTime.Now;
+//								break;
+//							}
 
-							databaseContext.SaveChanges();
-							lastCommandSend = DateTime.Now;
-						}
-						while (fromItem < itemsCount);
+//							databaseContext.SaveChanges();
+//							lastCommandSend = DateTime.Now;
+//						}
+//						while (fromItem < itemsCount);
 
-						if (writeHistory)
-							lastWriteStatus = nowWithoutSeconds;
-					}
+//						if (writeHistory)
+//							lastWriteStatus = nowWithoutSeconds;
+//					}
+#endregion
 
-					#region
+#region
 					//lock (waitingForAnswerLock)
 					//	if (isConnected && !waitingForAnswer)
 					//	{
@@ -359,7 +389,7 @@ Console.WriteLine($"{DateTime.Now} cu: {address:x8} ok - from: {fromItem}, count
 					//	else
 					//		lastPool = DateTime.Now;
 					//}
-					#endregion
+#endregion
 
 					Thread.Sleep(1);
 				}
@@ -368,8 +398,67 @@ Console.WriteLine($"{DateTime.Now} cu: {address:x8} ok - from: {fromItem}, count
 				}
 			}
 
-			Disconnect();
+			//Disconnect();
 			ExitedThread = true;
 		}
+
+		void OnAcceptTcpClient(IAsyncResult ar)
+		{
+			try
+			{
+				if (ExitThread)
+					return;
+
+				Socket socket = tcpListener.EndAcceptSocket(ar);
+				socket.ReceiveBufferSize = BufferSize;
+				socket.SendBufferSize = BufferSize;
+				socket.ReceiveTimeout = SocketTimeout;
+				socket.SendTimeout = SocketTimeout;
+				socket.Blocking = false;
+				socket.DontFragment = true;
+				SocketItem item = new();
+				item.socket = socket;
+				sockets.Add(item);
+			}
+			catch (Exception e)
+			{
+				//logError.WriteDateTimeLog(LogErrorHeader, e.ToString());
+			}
+
+			try
+			{
+				tcpListener.Start();
+				tcpListener.BeginAcceptTcpClient(OnAcceptTcpClient, tcpListener);
+			}
+			catch (Exception e)
+			{
+				//logError.WriteDateTimeLog(LogErrorHeader, e.ToString());
+			}
+
+			//if (socket != null)
+			//	SendOnChangeConnectionState(socket, true);
+		}
+
+		//void SendOnChangeConnectionState(Socket socket, bool connection)
+		//{
+		//	if (OnChangeConnectionState != null)
+		//		try
+		//		{
+		//			OnChangeConnectionState(socket, connection);
+		//		}
+		//		catch (Exception e)
+		//		{
+		//			logError.WriteDateTimeLog(LogErrorHeader, e.ToString());
+		//		}
+		//}
+	}
+
+	public class SocketItem
+	{
+		public Socket socket;
+		public string sessionKey;
+		public byte[] data = new byte[0];
+		public DateTime lastDataResponse = DateTime.Now;
+		public List<string> logsToSend = new List<string>();
 	}
 }
