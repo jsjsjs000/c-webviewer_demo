@@ -1,0 +1,72 @@
+﻿@using InteligentnyDomWebViewer.Model;
+@model HistoryViewModel
+@{
+	Layout = "_Layout";
+}
+
+<div class="toast-container position-fixed top-0 w-100 p-3">
+	<div id="error-toast" class="toast align-items-center fade mx-auto text-bg-danger" role="alert" aria-live="assertive" aria-atomic="true">
+		<div class="d-flex">
+			<div class="toast-body">
+				Błąd pobierania danych z serwera.
+			</div>
+			<button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+		</div>
+	</div>
+</div>
+
+<div class="row text-center mx-auto my-2 user-select-none justify-content-center">
+	<div class="col-auto">
+		<select class="form-select form-select-sm" asp-items="@Model.Heatings" id="select-heating"></select>
+	</div>
+	<div class="col-auto">
+		<div class="btn-group" role="group" aria-label="Day or week">
+			<input type="radio" class="btn-check" name="btnradio" id="btnradio-day" autocomplete="off" checked>
+			<label class="btn btn-sm btn-outline-secondary" for="btnradio-day">Dzień</label>
+
+			<input type="radio" class="btn-check" name="btnradio" id="btnradio-week" autocomplete="off">
+			<label class="btn btn-sm btn-outline-secondary" for="btnradio-week">Tydzień</label>
+		</div>
+	</div>
+	<div class="col-auto">
+		<div class="btn btn-sm btn-outline-secondary d-inline-block mx-2 button-prev-week">
+			<i class="fa fa-angles-left"></i>
+		</div>
+		<div class="btn btn-sm btn-outline-secondary d-inline-block mx-2 button-prev-day">
+			<i class="fa fa-chevron-left"></i>
+		</div>
+	</div>
+	<div class="col-auto">
+		<input class="form-control form-control-sm" type="date" id="input-date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+	</div>
+	<div class="col-auto">
+		<div class="btn btn-sm btn-outline-secondary d-inline-block mx-2 button-next-day">
+			<i class="fa fa-chevron-right"></i>
+		</div>
+		<div class="btn btn-sm btn-outline-secondary d-inline-block mx-2 button-next-week">
+			<i class="fa fa-angles-right"></i>
+		</div>
+	</div>
+	<div class="col-auto">
+		<div class="btn btn-sm btn-outline-secondary d-inlineblockquote mx-2" id="button-refresh">
+			<i class="fa-solid fa-arrows-rotate"></i>
+		</div>
+	</div>
+	<div class="col-auto">
+		<div class="form-check mt-2">
+			<input class="form-check-input" type="checkbox" value="" id="checkbox-line">
+			<label class="form-check-label" for="checkbox-line">
+				Linie na wykresie
+			</label>
+		</div>
+	</div>
+</div>
+
+<div>
+	<canvas id="chart"></canvas>
+</div>
+
+<script src="~/js/History.js" asp-append-version="true"></script>
+<script type="text/javascript">
+	new History();
+</script>

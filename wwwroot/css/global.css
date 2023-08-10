@@ -1,0 +1,21 @@
+﻿body
+{
+	font-family: Tahoma;
+}
+
+main
+{
+	font-size: 12px;
+}
+
+table.web-table
+{
+	border-collapse: separate;
+}
+
+table.web-table th, table.web-table td
+{
+	background-color: #f4f4f4;
+	margin: 2px;
+	padding: 2px 4px;
+}

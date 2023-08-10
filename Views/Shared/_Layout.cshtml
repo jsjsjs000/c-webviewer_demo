@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+	<title>SmartDom</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="description" content="">
+
+	<link rel="shortcut icon" href="~/favicon.ico">
+	<link rel="icon" sizes="192x192" href="~/favicon.png">
+	<link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+	<link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" asp-append-version="true" />
+	<link rel="stylesheet" href="~/css/global.css" asp-append-version="true" />
+	<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+	<script src="~/lib/font-awesome/js/all.min.js" asp-append-version="true"></script>
+	<script src="~/lib/moment.js/moment.min.js" asp-append-version="true"></script>
+	<script src="~/lib/moment.js/locale/pl.js" asp-append-version="true"></script>
+	<script src="~/lib/chart.js/chart.umd.min.js" asp-append-version="true"></script>
+	<script src="~/lib/chartjs-adapter-moment/chartjs-adapter-moment.min.js" asp-append-version="true"></script>
+	<script type="text/javascript">
+		d = console.log;
+	</script>
+</head>
+<body>
+	<header>
+		<nav class="navbar bg-light navbar-expand-lg user-select-none">
+			<div class="container-fluid">
+				<a class="navbar-brand fw-semibold" asp-controller="Home">
+					<i class="fa-solid fa-temperature-three-quarters"></i>
+					Sterowanie ogrzewaniem
+				</a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+						data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+						aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbarSupportedContent">
+					<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+						<li class="nav-item">
+							<a class="nav-link active" aria-current="page" asp-controller="Home" asp-action="">Status</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link active" aria-current="page" asp-controller="Home" asp-action="History">Wykresy temperatury</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+	</header>
+
+	<main class="m-2">
+		@RenderBody()
+	</main>
+
+	<footer>
+	</footer>
+</body>
+</html>

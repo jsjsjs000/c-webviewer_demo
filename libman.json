@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "bootstrap@5.2.3",
+      "destination": "wwwroot/lib/bootstrap"
+    },
+    {
+      "library": "font-awesome@6.2.1",
+      "destination": "wwwroot/lib/font-awesome"
+    },
+    {
+      "library": "Chart.js@4.2.0",
+      "destination": "wwwroot/lib/chart.js"
+    },
+    {
+      "library": "chartjs-adapter-moment@1.0.1",
+      "destination": "wwwroot/lib/chartjs-adapter-moment"
+    },
+    {
+      "library": "moment.js@2.29.4",
+      "destination": "wwwroot/lib/moment.js"
+    }
+  ]
+}

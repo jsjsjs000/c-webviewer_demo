@@ -1,0 +1,236 @@
+﻿@using InteligentnyDomWebViewer.Model;
+@model HomeViewModel;
+@{
+	Layout = "_Layout";
+
+	string temperaturesTimeSpan = (Model.temperaturesLastUpdated ?? DateTime.Now).Subtract(DateTime.Now).ToString();
+	temperaturesTimeSpan = temperaturesTimeSpan.Substring(0, temperaturesTimeSpan.IndexOf("."));
+	string relaysTimeSpan = (Model.relaysLastUpdated ?? DateTime.Now).Subtract(DateTime.Now).ToString();
+	relaysTimeSpan = relaysTimeSpan.Substring(0, relaysTimeSpan.IndexOf("."));
+	string heatingsTimeSpan = (Model.heatingsLastUpdated ?? DateTime.Now).Subtract(DateTime.Now).ToString();
+	heatingsTimeSpan = heatingsTimeSpan.Substring(0, heatingsTimeSpan.IndexOf("."));
+	string cusTimeSpan = (Model.cusLastUpdated ?? DateTime.Now).Subtract(DateTime.Now).ToString();
+	cusTimeSpan = cusTimeSpan.Substring(0, cusTimeSpan.IndexOf("."));
+}
+
+<div class="d-inline-block align-top m-2">
+	<div class="text-center fw-bold">Teromometry (@Model.heatingsLastUpdated.ToString(), @temperaturesTimeSpan)</div>
+	<table class="web-table">
+		<thead>
+			<tr>
+				<th>Nazwa</th>
+				<th>Adres</th>
+				<th>Segment</th>
+				<th>Błąd</th>
+				<th>Temperatura</th>
+				<th>Uptime</th>
+				<th>V in</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (DevicesTemperatures temperature in @Model.temperatures ?? Enumerable.Empty<DevicesTemperatures>())
+			{
+				<tr>
+					<td>@temperature.Name</td>
+					<td>@temperature.Address.ToString("x8")</td>
+					<td>@temperature.Segment</td>
+					<td>
+						@if (temperature.Error)
+						{
+							<span style="color: red">Błąd</span>
+						}
+						else
+						{
+							@:-
+						}
+					</td>
+					<td>
+						@if (!temperature.Error)
+						{
+							@temperature.Temperature.ToString("f1") @:&deg;C
+						}
+					</td>
+					<td>
+						@if (!temperature.Error)
+						{
+							@temperature.Uptime @:s
+						}
+					</td>
+					<td>
+						@if (!temperature.Error)
+						{
+							@temperature.Vin.ToString("f2") @:V
+						}
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+<div class="d-inline-block align-top m-2">
+	<div class="text-center fw-bold">Przekaźniki (@Model.heatingsLastUpdated.ToString(), @relaysTimeSpan)</div>
+	<table class="web-table">
+		<thead>
+			<tr>
+				<th>Nazwa</th>
+				<th>Adres</th>
+				<th>Segment</th>
+				<th>Błąd</th>
+				<th>Przekaźnik</th>
+				<th>Uptime</th>
+				<th>V in</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (DevicesRelays relay in @Model.relays ?? Enumerable.Empty<DevicesRelays>())
+			{
+				<tr>
+					<td>@relay.Name</td>
+					<td>@relay.Address.ToString("x8")</td>
+					<td>@relay.Segment</td>
+					<td>
+						@if (relay.Error)
+						{
+							<span style="color: red">Błąd</span>
+						}
+						else
+						{
+							@:-
+						}
+					</td>
+					<td>
+						@if (relay.Error)
+						{
+							@:-
+						}
+						else
+						{
+							@if (relay.Relay)
+							{
+								@:<span style="color: green">WŁĄCZONY</span>
+							}
+							else
+							{
+								@:<span>wyłączony</span>
+							}
+						}
+					</td>
+					<td>
+						@if (!relay.Error)
+						{
+							@relay.Uptime @:s
+						}
+					</td>
+					<td>
+						@if (!relay.Error)
+						{
+							@relay.Vin.ToString("f2") @:V
+						}
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+<div class="d-inline-block align-top m-2">
+	<div class="text-center fw-bold">Termostaty (@Model.heatingsLastUpdated.ToString(), @heatingsTimeSpan)</div>
+	<table class="web-table">
+		<thead>
+			<tr>
+				<th>Nazwa</th>
+				<th>Adres</th>
+				<th>Segment</th>
+				<th>Tryb</th>
+				<th>Ustawiona temperatura</th>
+				<th>Włączone grzanie</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (DevicesHeatings heating in @Model.heatings ?? Enumerable.Empty<DevicesHeatings>())
+			{
+				<tr>
+					<td>@heating.Name</td>
+					<td>@heating.Address.ToString("x8")</td>
+					<td>@heating.Segment</td>
+					<td>
+						@if (@heating.Mode != DevicesHeatings.HeatingMode.Off)
+						{
+							@:<span style="color: green">
+								@DevicesHeatings.HeatingModeToString(@heating.Mode)
+							@:</span>
+						}
+						else
+						{
+							@DevicesHeatings.HeatingModeToString(@heating.Mode)
+						}
+					</td>
+					<td>
+						@if (@heating.Mode != DevicesHeatings.HeatingMode.Off)
+						{
+							@heating.SettingTemperature @:&deg;C
+						}
+					</td>
+					<td>
+						@if (@heating.Mode != DevicesHeatings.HeatingMode.Off)
+						{
+							if (heating.Relay)
+							{
+								@:<span style="color: green">WŁĄCZONE</span>
+							}
+							else
+							{
+								@:<span>wyłączone</span>
+							}
+						}
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+<div class="d-inline-block align-top m-2">
+	<div class="text-center fw-bold">Centralka (@Model.heatingsLastUpdated.ToString(), @cusTimeSpan)</div>
+	<table class="web-table">
+		<thead>
+			<tr>
+				<th>Adres</th>
+				<th>Błąd</th>
+				<th>Uptime</th>
+				<th>V in</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (DevicesCu cu in @Model.cus ?? Enumerable.Empty<DevicesCu>())
+			{
+				<tr>
+					<td>@cu.Address.ToString("x8")</td>
+					<td>
+						@if (cu.Error)
+						{
+							<span style="color: red">Błąd</span>
+						}
+						else
+						{
+							@:-
+						}
+					</td>
+					<td>
+						@if (!cu.Error)
+						{
+							@cu.Uptime @:s
+						}
+					</td>
+					<td>
+						@if (!cu.Error)
+						{
+							@cu.Vin.ToString("f2") @:V
+						}
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
