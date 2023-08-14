@@ -14,7 +14,9 @@ string mySqlConnectionString = builder.Configuration.GetConnectionString("Defaul
 builder.Services.AddDbContext<WebDbContext>(opts => {
 	opts.UseMySql(mySqlConnectionString, ServerVersion.AutoDetect(mySqlConnectionString));
 	opts.EnableSensitiveDataLogging();
-});
+}
+, ServiceLifetime.Transient
+);
 
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 	/// prevent JSON Serializer camelCase output

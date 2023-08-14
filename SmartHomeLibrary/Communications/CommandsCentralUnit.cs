@@ -8,6 +8,61 @@ namespace SmartHomeTool.SmartHomeLibrary
 {
 	public partial class Commands
 	{
+		public class Devices
+		{
+			public uint Address { get; set; }
+			public CentralUnitDeviceItem.LineNumber LineNumber { get; set; }
+			public DeviceVersion.HardwareType1Enum HardwareType1 { get; set; }
+			public DeviceVersion.HardwareType2Enum HardwareType2 { get; set; }
+			public byte HardwareSegmentsCount { get; set; }
+			public byte HardwareVersion { get; set; }
+			//public DbSet<Devices> ParentItem { get; set; }
+			public bool Active { get; set; }
+		}
+
+		public abstract class VisualComponent
+		{
+			public string Name = string.Empty;
+			public List<VisualComponent> VisualSubItems = new();
+		}
+
+		public class GroupVisualComponent : VisualComponent { }
+
+		public class HeatingVisualComponent : VisualComponent
+		{
+			public Devices DeviceItem;
+			public byte DeviceSegment;
+			public List<HeatingVisualComponentSubItem> SubItems = new();
+			public HeatingVisualComponentControl Control = new();
+		}
+
+		public class HeatingVisualComponentSubItem
+		{
+			public string Name = string.Empty;
+			public Devices DeviceItem;
+			public byte DeviceSegment;
+		}
+
+		public class HeatingVisualComponentControl
+		{
+			public enum Mode { Off, Auto, Manual };
+			public Mode HeatingMode;
+			public TimeSpan DayFrom = new(8, 0, 0);
+			public TimeSpan NightFrom = new(22, 0, 0);
+			public float ManualTemperature = 21;
+			public float DayTemperature = 21;
+			public float NightTemperature = 18;
+
+			public static string ModeToString(Mode mode) => mode switch
+			{
+				Mode.Off => "Wyłączone",
+				Mode.Auto => "Auto",
+				Mode.Manual => "Manualne",
+				_ => "",
+			};
+		}
+
+
 		public class CentralUnitStatus
 		{
 			enum StatusType { Temperature = 0x40, Relay = 0x41, HeatingVisualComponent = 0x50 }
@@ -177,106 +232,106 @@ namespace SmartHomeTool.SmartHomeLibrary
 			}
 		}
 
-		public bool SendGetCentralUnitStatus(uint packetId, uint encryptionKey, uint address,
-				out List<CentralUnitStatus> status, out List<HeatingVisualComponent> heatingVisualComponents,
-				int fromItem, bool detail, out int itemsCount, out uint cuUptime, out float cuVin)
-		{
-			status = new List<CentralUnitStatus>();
-			heatingVisualComponents = new List<HeatingVisualComponent>();
-			itemsCount = 0;
-			cuUptime = uint.MaxValue;
-			cuVin = 0;
-			byte[] data = new byte[] { (byte)'g', (byte)(fromItem >> 8), (byte)(fromItem & 0xff), (byte)(detail ? 1 : 0) };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendGetCentralUnitStatus(uint packetId, uint encryptionKey, uint address,
+		//		out List<CentralUnitStatus> status, out List<HeatingVisualComponent> heatingVisualComponents,
+		//		int fromItem, bool detail, out int itemsCount, out uint cuUptime, out float cuVin)
+		//{
+		//	status = new List<CentralUnitStatus>();
+		//	heatingVisualComponents = new List<HeatingVisualComponent>();
+		//	itemsCount = 0;
+		//	cuUptime = uint.MaxValue;
+		//	cuVin = 0;
+		//	byte[] data = new byte[] { (byte)'g', (byte)(fromItem >> 8), (byte)(fromItem & 0xff), (byte)(detail ? 1 : 0) };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			bool ok = dataOut.Length >= 1 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
-			if (ok)
-				ok = CentralUnitStatus.ParseFromBytes(dataOut[1..], out status, out heatingVisualComponents,
-						detail, out itemsCount, out cuUptime, out cuVin);
-			return ok;
-		}
+		//	bool ok = dataOut.Length >= 1 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
+		//	if (ok)
+		//		ok = CentralUnitStatus.ParseFromBytes(dataOut[1..], out status, out heatingVisualComponents,
+		//				detail, out itemsCount, out cuUptime, out cuVin);
+		//	return ok;
+		//}
 
-		public bool SendSetRelay(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment, bool set)
-		{
-			byte[] data = new byte[] {
-					(byte)'s', (byte)'R', (byte)'E', (byte)'L', Common.Uint32_3Byte(relayAddress),
-					Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress),
-					segment, (byte)(set ? 1 : 0) };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendSetRelay(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment, bool set)
+		//{
+		//	byte[] data = new byte[] {
+		//			(byte)'s', (byte)'R', (byte)'E', (byte)'L', Common.Uint32_3Byte(relayAddress),
+		//			Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress),
+		//			segment, (byte)(set ? 1 : 0) };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
-					address == outAddress && packetId == outPacketId && dataOut[4] == 0;
-		}
+		//	return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
+		//			address == outAddress && packetId == outPacketId && dataOut[4] == 0;
+		//}
 
-		public bool SendGetRelay(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment, out bool? set)
-		{
-			set = null;
-			byte[] data = new byte[] {
-					(byte)'g', (byte)'R', (byte)'E', (byte)'L', Common.Uint32_3Byte(relayAddress),
-					Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendGetRelay(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment, out bool? set)
+		//{
+		//	set = null;
+		//	byte[] data = new byte[] {
+		//			(byte)'g', (byte)'R', (byte)'E', (byte)'L', Common.Uint32_3Byte(relayAddress),
+		//			Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			if (dataOut[4] == 0)
-				set = false;
-			else if (dataOut[4] == 1)
-				set = true;
-			return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
-					address == outAddress && packetId == outPacketId;
-		}
+		//	if (dataOut[4] == 0)
+		//		set = false;
+		//	else if (dataOut[4] == 1)
+		//		set = true;
+		//	return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
+		//			address == outAddress && packetId == outPacketId;
+		//}
 
-		public bool SendSetConfiguration(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment,
-				HeatingVisualComponent heating)
-		{
-			byte[] data = new byte[] {
-					(byte)'s', (byte)'C', (byte)'O', (byte)'N', (byte)'F', Common.Uint32_3Byte(relayAddress),
-					Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment,
-					(byte)heating.Control.HeatingMode, (byte)heating.Control.DayFrom.Hours, (byte)heating.Control.DayFrom.Minutes,
-					(byte)heating.Control.NightFrom.Hours, (byte)heating.Control.NightFrom.Minutes,
-					Common.Uint32_1Byte((uint)(heating.Control.ManualTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.ManualTemperature * 10f)),
-					Common.Uint32_1Byte((uint)(heating.Control.DayTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.DayTemperature * 10f)),
-					Common.Uint32_1Byte((uint)(heating.Control.NightTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.NightTemperature * 10f)) };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendSetConfiguration(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment,
+		//		HeatingVisualComponent heating)
+		//{
+		//	byte[] data = new byte[] {
+		//			(byte)'s', (byte)'C', (byte)'O', (byte)'N', (byte)'F', Common.Uint32_3Byte(relayAddress),
+		//			Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment,
+		//			(byte)heating.Control.HeatingMode, (byte)heating.Control.DayFrom.Hours, (byte)heating.Control.DayFrom.Minutes,
+		//			(byte)heating.Control.NightFrom.Hours, (byte)heating.Control.NightFrom.Minutes,
+		//			Common.Uint32_1Byte((uint)(heating.Control.ManualTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.ManualTemperature * 10f)),
+		//			Common.Uint32_1Byte((uint)(heating.Control.DayTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.DayTemperature * 10f)),
+		//			Common.Uint32_1Byte((uint)(heating.Control.NightTemperature * 10f)), Common.Uint32_0Byte((uint)(heating.Control.NightTemperature * 10f)) };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			return dataOut.Length >= 6 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
-					dataOut[4] == data[4] && address == outAddress && packetId == outPacketId && dataOut[5] == 0;
-		}
+		//	return dataOut.Length >= 6 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
+		//			dataOut[4] == data[4] && address == outAddress && packetId == outPacketId && dataOut[5] == 0;
+		//}
 
-		public bool SendGetConfiguration(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment,
-				out HeatingVisualComponent heating)
-		{
-			heating = null;
-			byte[] data = new byte[] {
-					(byte)'g', (byte)'C', (byte)'O', (byte)'N', (byte)'F', Common.Uint32_3Byte(relayAddress),
-					Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendGetConfiguration(uint packetId, uint encryptionKey, uint address, uint relayAddress, byte segment,
+		//		out HeatingVisualComponent heating)
+		//{
+		//	heating = null;
+		//	byte[] data = new byte[] {
+		//			(byte)'g', (byte)'C', (byte)'O', (byte)'N', (byte)'F', Common.Uint32_3Byte(relayAddress),
+		//			Common.Uint32_2Byte(relayAddress), Common.Uint32_1Byte(relayAddress), Common.Uint32_0Byte(relayAddress), segment };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			if (dataOut.Length != 17 || dataOut[5] != 0)
-				return false;
+		//	if (dataOut.Length != 17 || dataOut[5] != 0)
+		//		return false;
 
-			heating = new HeatingVisualComponent
-			{
-				DeviceItem = new Devices()
-				{
-					Address = relayAddress,
-				},
-				DeviceSegment = segment,
-				Control = new HeatingVisualComponentControl()
-				{
-					HeatingMode = (HeatingVisualComponentControl.Mode)dataOut[6],
-					DayFrom = new TimeSpan(dataOut[7], dataOut[8], 0),
-					NightFrom = new TimeSpan(dataOut[9], dataOut[10], 0),
-					ManualTemperature = ((dataOut[11] << 8) | dataOut[12]) / 10f,
-					DayTemperature = ((dataOut[13] << 8) | dataOut[14]) / 10f,
-					NightTemperature = ((dataOut[15] << 8) | dataOut[16]) / 10f,
-				},
-			};
-			return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
-					dataOut[4] == data[4] && address == outAddress && packetId == outPacketId;
-		}
+		//	heating = new HeatingVisualComponent
+		//	{
+		//		DeviceItem = new Devices()
+		//		{
+		//			Address = relayAddress,
+		//		},
+		//		DeviceSegment = segment,
+		//		Control = new HeatingVisualComponentControl()
+		//		{
+		//			HeatingMode = (HeatingVisualComponentControl.Mode)dataOut[6],
+		//			DayFrom = new TimeSpan(dataOut[7], dataOut[8], 0),
+		//			NightFrom = new TimeSpan(dataOut[9], dataOut[10], 0),
+		//			ManualTemperature = ((dataOut[11] << 8) | dataOut[12]) / 10f,
+		//			DayTemperature = ((dataOut[13] << 8) | dataOut[14]) / 10f,
+		//			NightTemperature = ((dataOut[15] << 8) | dataOut[16]) / 10f,
+		//		},
+		//	};
+		//	return dataOut.Length >= 5 && dataOut[0] == data[0] && dataOut[1] == data[1] && dataOut[2] == data[2] && dataOut[3] == data[3] &&
+		//			dataOut[4] == data[4] && address == outAddress && packetId == outPacketId;
+		//}
 	}
 }

@@ -10,89 +10,89 @@ namespace SmartHomeTool.SmartHomeLibrary
 {
 	public partial class Commands
 	{
-		readonly Communication com;
+		//readonly Communication com;
 
-		public Commands(Communication com)
-		{
-			this.com = com;
-		}
+		//public Commands(Communication com)
+		//{
+		//	this.com = com;
+		//}
 
-		public bool SendGetDeviceAddress(uint packetId, uint encryptionKey, uint address, byte type,
-				out List<uint> outAddress_)
-		{
-			uint outAddress;
-			outAddress_ = new List<uint>();
-			byte[] data = new byte[] { 0xfa, type };
-			if (type == 1)
-			{
-				if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out outAddress, out List<byte[]> dataOuts,
-						1000 + com.DefaultReadTimeoutMs))
-					return false;
+		//public bool SendGetDeviceAddress(uint packetId, uint encryptionKey, uint address, byte type,
+		//		out List<uint> outAddress_)
+		//{
+		//	uint outAddress;
+		//	outAddress_ = new List<uint>();
+		//	byte[] data = new byte[] { 0xfa, type };
+		//	if (type == 1)
+		//	{
+		//		if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out outAddress, out List<byte[]> dataOuts,
+		//				1000 + com.DefaultReadTimeoutMs))
+		//			return false;
 
-				foreach (byte[] data_ in dataOuts)
-					if (data_.Length == 5 && data_[0] == data[0] && (address == outAddress || address == Packets.Broadcast) && packetId == outPacketId)
-						outAddress_.Add(Common.Uint32FromArrayBE(data_, 1));
-				return outAddress_.Count > 0;
-			}
-			else
-			{
-				if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out outAddress, out byte[] dataOut))
-					return false;
+		//		foreach (byte[] data_ in dataOuts)
+		//			if (data_.Length == 5 && data_[0] == data[0] && (address == outAddress || address == Packets.Broadcast) && packetId == outPacketId)
+		//				outAddress_.Add(Common.Uint32FromArrayBE(data_, 1));
+		//		return outAddress_.Count > 0;
+		//	}
+		//	else
+		//	{
+		//		if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out outAddress, out byte[] dataOut))
+		//			return false;
 
-				bool ok = dataOut.Length == 5 && dataOut[0] == data[0] && (address == outAddress || address == Packets.Broadcast) &&
-						packetId == outPacketId;
-				outAddress_.Add(Common.Uint32FromArrayBE(dataOut, 1));
-				return ok;
-			}
-		}
+		//		bool ok = dataOut.Length == 5 && dataOut[0] == data[0] && (address == outAddress || address == Packets.Broadcast) &&
+		//				packetId == outPacketId;
+		//		outAddress_.Add(Common.Uint32FromArrayBE(dataOut, 1));
+		//		return ok;
+		//	}
+		//}
 
-		public bool SendDirectMode(uint packetId, uint encryptionKey, uint address, byte line)
-		{
-			byte[] data = new byte[] { 0xfb, line };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendDirectMode(uint packetId, uint encryptionKey, uint address, byte line)
+		//{
+		//	byte[] data = new byte[] { 0xfb, line };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			return dataOut.Length == 2 && data[0] == dataOut[0] && (address == outAddress || address == Packets.Broadcast) &&
-					packetId == outPacketId && dataOut[1] == 0;
-		}
+		//	return dataOut.Length == 2 && data[0] == dataOut[0] && (address == outAddress || address == Packets.Broadcast) &&
+		//			packetId == outPacketId && dataOut[1] == 0;
+		//}
 
-		public bool SendGetFlashMemory(uint packetId, uint encryptionKey, uint address,
-				uint flashAddress, ushort length, out byte[] outData)
-		{
-			outData = Array.Empty<byte>();
-			if (length == 0 || length > 256)
-				return false;
+		//public bool SendGetFlashMemory(uint packetId, uint encryptionKey, uint address,
+		//		uint flashAddress, ushort length, out byte[] outData)
+		//{
+		//	outData = Array.Empty<byte>();
+		//	if (length == 0 || length > 256)
+		//		return false;
 
-			byte[] data = new byte[] { 0xfc, Common.Uint32_3Byte(flashAddress), Common.Uint32_2Byte(flashAddress),
-					Common.Uint32_1Byte(flashAddress), Common.Uint32_0Byte(flashAddress),
-					Common.Uint32_1Byte(length), Common.Uint32_0Byte(length)
-			};
-			com.SetReadTimeOut(Communication.ReadTimeoutEpromMs);
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
-			{
-				com.SetDefaultReadTimeOut();
-				return false;
-			}
+		//	byte[] data = new byte[] { 0xfc, Common.Uint32_3Byte(flashAddress), Common.Uint32_2Byte(flashAddress),
+		//			Common.Uint32_1Byte(flashAddress), Common.Uint32_0Byte(flashAddress),
+		//			Common.Uint32_1Byte(length), Common.Uint32_0Byte(length)
+		//	};
+		//	com.SetReadTimeOut(Communication.ReadTimeoutEpromMs);
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
+		//	{
+		//		com.SetDefaultReadTimeOut();
+		//		return false;
+		//	}
 
-			com.SetDefaultReadTimeOut();
-			bool ok = dataOut.Length == 2 + length && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
-			outData = new byte[length];
-			Array.Copy(dataOut, 2, outData, 0, length);
-			return ok;
-		}
+		//	com.SetDefaultReadTimeOut();
+		//	bool ok = dataOut.Length == 2 + length && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
+		//	outData = new byte[length];
+		//	Array.Copy(dataOut, 2, outData, 0, length);
+		//	return ok;
+		//}
 
-		public bool SendReset(uint packetId, uint encryptionKey, uint address, byte resetType, out byte error)
-		{
-			error = 0;
-			byte[] data = new byte[] { 0xff, resetType };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendReset(uint packetId, uint encryptionKey, uint address, byte resetType, out byte error)
+		//{
+		//	error = 0;
+		//	byte[] data = new byte[] { 0xff, resetType };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			bool ok = dataOut.Length == 2 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
-			if (ok)
-				error = dataOut[1];
-			return ok;
-		}
+		//	bool ok = dataOut.Length == 2 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
+		//	if (ok)
+		//		error = dataOut[1];
+		//	return ok;
+		//}
 
 		public class DeviceVersion
 		{
@@ -323,41 +323,41 @@ namespace SmartHomeTool.SmartHomeLibrary
 			}
 		}
 
-		public bool SendGetDeviceVersion(uint packetId, uint encryptionKey, uint address, out DeviceVersion version)
-		{
-			version = new DeviceVersion();
-			byte[] data = new byte[] { (byte)'v' };
-			if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
-				return false;
+		//public bool SendGetDeviceVersion(uint packetId, uint encryptionKey, uint address, out DeviceVersion version)
+		//{
+		//	version = new DeviceVersion();
+		//	byte[] data = new byte[] { (byte)'v' };
+		//	if (!com.SendPacket(packetId, encryptionKey, address, data, out uint outPacketId, out uint _, out uint outAddress, out byte[] dataOut))
+		//		return false;
 
-			bool ok = dataOut.Length == 27 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
-			if (ok)
-			{
-				if (DateTime.TryParse("20" + dataOut[1].ToString("d2") + '-' + dataOut[2] + '-' + dataOut[3] + ' ' + dataOut[4] + ':' + dataOut[5], out DateTime dt))
-					version.ProgrammedProgram = dt;
-				if (DateTime.TryParse("20" + dataOut[6].ToString("d2") + '-' + dataOut[7] + '-' + dataOut[8], out dt))
-					version.ProgramDateTime = dt;
-				version.ProgramVersionMajor = dataOut[9];
-				version.ProgramVersionMinor = dataOut[10];
-				if (DateTime.TryParse("20" + dataOut[11].ToString("d2") + '-' + dataOut[12] + '-' + dataOut[13], out dt))
-					version.BootloaderDateTime = dt;
-				version.BootloaderVersionMajor = dataOut[14];
-				version.BootloaderVersionMinor = dataOut[15];
-				version.HardwareType1 = (DeviceVersion.HardwareType1Enum)dataOut[16];
-				version.HardwareType2 = (DeviceVersion.HardwareType2Enum)dataOut[17];
-				version.HardwareSegmentsCount = dataOut[18];
-				version.HardwareVersion = dataOut[19];
-				version.Uptime = (uint)(dataOut[20] << 24 | dataOut[21] << 16 | dataOut[22] << 8 | dataOut[23]);
-				version.Vin = ((dataOut[24] << 8) | dataOut[25]) / 1000f;
-				if (dataOut[26] == 'b')
-					version.ProgramState = DeviceVersion.ProgramStateType.Bootloader;
-				else if (dataOut[26] == 'p')
-					version.ProgramState = DeviceVersion.ProgramStateType.Program;
-				version.TimeResponse = com.lastReceiveMiliseconds;
-			}
-			return ok;
-		}
-		
+		//	bool ok = dataOut.Length == 27 && dataOut[0] == data[0] && address == outAddress && packetId == outPacketId;
+		//	if (ok)
+		//	{
+		//		if (DateTime.TryParse("20" + dataOut[1].ToString("d2") + '-' + dataOut[2] + '-' + dataOut[3] + ' ' + dataOut[4] + ':' + dataOut[5], out DateTime dt))
+		//			version.ProgrammedProgram = dt;
+		//		if (DateTime.TryParse("20" + dataOut[6].ToString("d2") + '-' + dataOut[7] + '-' + dataOut[8], out dt))
+		//			version.ProgramDateTime = dt;
+		//		version.ProgramVersionMajor = dataOut[9];
+		//		version.ProgramVersionMinor = dataOut[10];
+		//		if (DateTime.TryParse("20" + dataOut[11].ToString("d2") + '-' + dataOut[12] + '-' + dataOut[13], out dt))
+		//			version.BootloaderDateTime = dt;
+		//		version.BootloaderVersionMajor = dataOut[14];
+		//		version.BootloaderVersionMinor = dataOut[15];
+		//		version.HardwareType1 = (DeviceVersion.HardwareType1Enum)dataOut[16];
+		//		version.HardwareType2 = (DeviceVersion.HardwareType2Enum)dataOut[17];
+		//		version.HardwareSegmentsCount = dataOut[18];
+		//		version.HardwareVersion = dataOut[19];
+		//		version.Uptime = (uint)(dataOut[20] << 24 | dataOut[21] << 16 | dataOut[22] << 8 | dataOut[23]);
+		//		version.Vin = ((dataOut[24] << 8) | dataOut[25]) / 1000f;
+		//		if (dataOut[26] == 'b')
+		//			version.ProgramState = DeviceVersion.ProgramStateType.Bootloader;
+		//		else if (dataOut[26] == 'p')
+		//			version.ProgramState = DeviceVersion.ProgramStateType.Program;
+		//		version.TimeResponse = com.lastReceiveMiliseconds;
+		//	}
+		//	return ok;
+		//}
+
 		public class CentralUnitDeviceItem
 		{
 			public enum LineNumber
@@ -380,17 +380,17 @@ namespace SmartHomeTool.SmartHomeLibrary
 			public List<CentralUnitDeviceItem> devicesItems = new();
 		}
 
-		public void SendSynchronize(uint packetId, uint encryptionKey, uint address)
-		{
-			SendSynchronize(packetId, encryptionKey, address, DateTime.Now);
-		}
+		//public void SendSynchronize(uint packetId, uint encryptionKey, uint address)
+		//{
+		//	SendSynchronize(packetId, encryptionKey, address, DateTime.Now);
+		//}
 
-		public void SendSynchronize(uint packetId, uint encryptionKey, uint address, DateTime dt)
-		{
-			byte[] data = new byte[] { (byte)'S',
-					(byte)(dt.Year - 2000), (byte)dt.Month, (byte)dt.Day, (byte)dt.DayOfWeek,
-					(byte)dt.Hour, (byte)dt.Minute, (byte)dt.Second, (byte)(dt.Millisecond >> 8), (byte)(dt.Millisecond & 0xff) };
-			com.SendPacket(packetId, encryptionKey, address, false, data);
-		}
+		//public void SendSynchronize(uint packetId, uint encryptionKey, uint address, DateTime dt)
+		//{
+		//	byte[] data = new byte[] { (byte)'S',
+		//			(byte)(dt.Year - 2000), (byte)dt.Month, (byte)dt.Day, (byte)dt.DayOfWeek,
+		//			(byte)dt.Hour, (byte)dt.Minute, (byte)dt.Second, (byte)(dt.Millisecond >> 8), (byte)(dt.Millisecond & 0xff) };
+		//	com.SendPacket(packetId, encryptionKey, address, false, data);
+		//}
 	}
 }
