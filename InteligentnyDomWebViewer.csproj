@@ -33,6 +33,8 @@
   <ItemGroup>
     <Compile Include="SmartHomeLibrary\Communications\Commands.cs" />
     <Compile Include="SmartHomeLibrary\Communications\CommandsCentralUnit.cs" />
+    <Compile Include="SmartHomeLibrary\Packets\Crc32.cs" />
+    <Compile Include="SmartHomeLibrary\Packets\Packets.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -34,6 +34,14 @@ namespace SmartHomeTool.SmartHomeLibrary
 			public byte DeviceSegment;
 			public List<HeatingVisualComponentSubItem> SubItems = new();
 			public HeatingVisualComponentControl Control = new();
+
+			public byte[] GetBytes(uint address)
+			{
+				int j = 0;
+				byte[] bytes = new byte[512];
+				bytes[j++] = (byte)'g';
+				return bytes;
+			}
 		}
 
 		public class HeatingVisualComponentSubItem
@@ -61,7 +69,6 @@ namespace SmartHomeTool.SmartHomeLibrary
 				_ => "",
 			};
 		}
-
 
 		public class CentralUnitStatus
 		{
@@ -181,6 +188,101 @@ namespace SmartHomeTool.SmartHomeLibrary
 
 				status = statusTmp;
 				return true;
+			}
+
+			public static byte[] GetBytes(List<CentralUnitStatus> statuses, List<HeatingVisualComponent> heatingVisualComponents,
+					uint cuUptime, float cuVin, byte details)
+			{
+				int j = 0;
+				byte[] bytes = new byte[2048];
+				bytes[j++] = (byte)'g';
+				bytes[j++] = (byte)(statuses.Count + heatingVisualComponents.Count);
+				bytes[j++] = Common.Uint32_1Byte((uint)(statuses.Count + heatingVisualComponents.Count));
+				bytes[j++] = Common.Uint32_0Byte((uint)(statuses.Count + heatingVisualComponents.Count));
+
+				if (details >= 1)
+				{
+					bytes[j++] = Common.Uint32_3Byte(cuUptime);
+					bytes[j++] = Common.Uint32_2Byte(cuUptime);
+					bytes[j++] = Common.Uint32_1Byte(cuUptime);
+					bytes[j++] = Common.Uint32_0Byte(cuUptime);
+					bytes[j++] = Common.Uint32_1Byte((uint)(cuVin * 1000));
+					bytes[j++] = Common.Uint32_0Byte((uint)(cuVin * 1000));
+				}
+
+				foreach (CentralUnitStatus status in statuses)
+				{
+					if (status is TemperatureStatus)
+						bytes[j++] = (byte)StatusType.Temperature;
+					else if (status is RelayStatus)
+						bytes[j++] = (byte)StatusType.Relay;
+					else
+						bytes[j++] = 0;
+
+					bytes[j++] = Common.Uint32_3Byte(status.address);
+					bytes[j++] = Common.Uint32_2Byte(status.address);
+					bytes[j++] = Common.Uint32_1Byte(status.address);
+					bytes[j++] = Common.Uint32_0Byte(status.address);
+
+					if (status is TemperatureStatus statusTemperature)
+					{
+						bytes[j++] = Convert.ToByte(statusTemperature.initialized);
+						bytes[j++] = Convert.ToByte(statusTemperature.error);
+						if (details >= 1)
+						{
+							bytes[j++] = Common.Uint32_3Byte(statusTemperature.uptime);
+							bytes[j++] = Common.Uint32_2Byte(statusTemperature.uptime);
+							bytes[j++] = Common.Uint32_1Byte(statusTemperature.uptime);
+							bytes[j++] = Common.Uint32_0Byte(statusTemperature.uptime);
+							bytes[j++] = Common.Uint32_1Byte((uint)(statusTemperature.vin * 1000));
+							bytes[j++] = Common.Uint32_0Byte((uint)(statusTemperature.vin * 1000));
+							bytes[j++] = 0; // $$ communication percent
+						}
+						bytes[j++] = (byte)statusTemperature.temperatures!.Length;
+						for (int i = 0; i < statusTemperature.temperatures.Length; i++)
+						{
+							float temperature = (statusTemperature.temperatures[i] == 0x7fff) ?
+									statusTemperature.temperatures[i] : statusTemperature.temperatures[i] * 16f;
+							bytes[j++] = Common.Uint32_1Byte((ushort)temperature);
+							bytes[j++] = Common.Uint32_0Byte((ushort)temperature);
+						}
+					}
+					else if (status is RelayStatus statusRelay)
+					{
+						bytes[j++] = Convert.ToByte(statusRelay.initialized);
+						bytes[j++] = Convert.ToByte(statusRelay.error);
+						if (details >= 1)
+						{
+							bytes[j++] = Common.Uint32_3Byte(statusRelay.uptime);
+							bytes[j++] = Common.Uint32_2Byte(statusRelay.uptime);
+							bytes[j++] = Common.Uint32_1Byte(statusRelay.uptime);
+							bytes[j++] = Common.Uint32_0Byte(statusRelay.uptime);
+							bytes[j++] = Common.Uint32_1Byte((uint)(statusRelay.vin * 1000));
+							bytes[j++] = Common.Uint32_0Byte((uint)(statusRelay.vin * 1000));
+							bytes[j++] = 0; // $$ communication percent
+						}
+						bytes[j++] = (byte)statusRelay.relaysStates!.Length;
+						for (int i = 0; i < statusRelay.relaysStates.Length; i++)
+							bytes[j++] = Convert.ToByte(statusRelay.relaysStates[i]);
+					}
+				}
+
+				foreach (HeatingVisualComponent heatingVisualComponent in heatingVisualComponents)
+				{
+					bytes[j++] = (byte)StatusType.HeatingVisualComponent;
+					bytes[j++] = Common.Uint32_3Byte(heatingVisualComponent.DeviceItem.Address);
+					bytes[j++] = Common.Uint32_2Byte(heatingVisualComponent.DeviceItem.Address);
+					bytes[j++] = Common.Uint32_1Byte(heatingVisualComponent.DeviceItem.Address);
+					bytes[j++] = Common.Uint32_0Byte(heatingVisualComponent.DeviceItem.Address);
+					bytes[j++] = heatingVisualComponent.DeviceSegment;
+					bytes[j++] = (byte)heatingVisualComponent.Control.HeatingMode;
+
+					float setTemperature = 31f;
+					bytes[j++] = Common.Uint32_1Byte((uint)(setTemperature * 16f));
+					bytes[j++] = Common.Uint32_0Byte((uint)(setTemperature * 16f));
+				}
+
+				return bytes[0..j];
 			}
 		}
 

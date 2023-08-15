@@ -1,4 +1,5 @@
 using InteligentnyDomRelay;
+using InteligentnyDomWebViewer;
 using InteligentnyDomWebViewer.Model;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -32,10 +33,12 @@ if (app.Environment.IsDevelopment())
 }
 
 CommunicationService communicationService = new(app.Services);
+CommunicationServiceApplication communicationServiceApplication = new(app.Services);
 
 Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
 {
 	communicationService.ExitThread = true;
+	communicationServiceApplication.ExitThread = true;
 };
 
 app.UseStaticFiles();
@@ -43,7 +46,7 @@ app.UseStaticFiles();
 app.MapControllerRoute("Home", "{action=Index}", new { Controller = "Home" });
 app.MapControllerRoute("History", "{controller=History}/{action=Index}/{id?}");
 
-var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<WebDbContext>();
+//var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<WebDbContext>();
 
 app.Run();
 

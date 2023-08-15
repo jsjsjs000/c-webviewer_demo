@@ -20,12 +20,16 @@ namespace InteligentnyDomRelay
 	{
 		const int Port = 28501;    // object 1 - Adam Kukuc
 		const int SocketTimeout = 5000;
-		const int BufferSize = 4 * 1024 * 1024;
+		const int BufferSize = 128 * 1024;
 
 		public InteligentnyDomWebViewer.Model.Devices cu;
 
+		public static List<CentralUnitStatus> Statuses = new();
+		public static List<HeatingVisualComponent> HeatingVisualComponents = new();
+		public static uint CuUptime;
+		public static float CuVin;
+
 		readonly IServiceScope scope;
-		//readonly WebDbContext databaseContext;
 		TcpListener tcpListener = new(IPAddress.Any, Port);
 		readonly List<SocketItem> sockets = new();
 
@@ -33,8 +37,6 @@ namespace InteligentnyDomRelay
 		{
 			scope = serviceProvider.CreateScope();
 			using WebDbContext databaseContext = scope.ServiceProvider.GetRequiredService<WebDbContext>();
-			//var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
-			//using WebDbContext databaseContext = new();
 
 			cu = databaseContext.Devices
 					.Where(n => n.Active &&
@@ -48,7 +50,6 @@ namespace InteligentnyDomRelay
 		void Connect()
 		{
 			tcpListener = new TcpListener(IPAddress.Any, Port);
-			//tcpListener.Server.Blocking = false;
 			tcpListener.Start();
 			tcpListener.BeginAcceptTcpClient(new AsyncCallback(OnAcceptTcpClient), tcpListener);
 		}
@@ -121,8 +122,14 @@ namespace InteligentnyDomRelay
 											out List<HeatingVisualComponent> heatingVisualComponents, true, 
 											out int itemsCount, out uint cuUptime, out float cuVin))
 									{
+										lock (Statuses)
+											Statuses = statuses;
+										lock (HeatingVisualComponents)
+											HeatingVisualComponents = heatingVisualComponents;
+										CuUptime = cuUptime;
+										CuVin = cuVin;
+
 										using WebDbContext databaseContext = scope.ServiceProvider.GetRequiredService<WebDbContext>();
-										//using WebDbContext databaseContext = new();
 										DateTime nowWithoutSeconds = Common.DateTimeWithoutSeconds(DateTime.Now);
 										bool writeHistory = Math.Abs(nowWithoutSeconds.Subtract(Common.DateTimeWithoutSeconds(lastWriteStatus)).TotalSeconds) >= 1;
 
@@ -526,13 +533,10 @@ namespace InteligentnyDomRelay
 
 				TcpListener? listener = ar.AsyncState as TcpListener;
 				TcpClient socket = listener!.EndAcceptTcpClient(ar);
-				//Socket socket = tcpClient.ge
-				//Socket socket = listener!.EndAcceptSocket(ar);
 				socket.ReceiveBufferSize = BufferSize;
 				socket.SendBufferSize = BufferSize;
 				socket.ReceiveTimeout = SocketTimeout;
 				socket.SendTimeout = SocketTimeout;
-				//socket.Blocking = false;
 				//socket.DontFragment = true;
 				SocketItem item = new();
 				item.socket = socket;
