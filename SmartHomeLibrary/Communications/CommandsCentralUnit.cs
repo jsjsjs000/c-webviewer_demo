@@ -35,12 +35,62 @@ namespace SmartHomeTool.SmartHomeLibrary
 			public List<HeatingVisualComponentSubItem> SubItems = new();
 			public HeatingVisualComponentControl Control = new();
 
-			public byte[] GetBytes(uint address)
+			public byte[] GetBytes()
 			{
+				bool ok = true;
 				int j = 0;
 				byte[] bytes = new byte[512];
 				bytes[j++] = (byte)'g';
-				return bytes;
+				bytes[j++] = (byte)'C';
+				bytes[j++] = (byte)'O';
+				bytes[j++] = (byte)'M';
+				bytes[j++] = (byte)'P';
+				bytes[j++] = Convert.ToByte(!ok);
+				if (ok)
+				{
+					bytes[j++] = (byte)Control.HeatingMode;
+					bytes[j++] = (byte)Control.PeriodsPnPtCount;
+					bytes[j++] = (byte)Control.PeriodsSaCount;
+					bytes[j++] = (byte)Control.PeriodsSuCount;
+					for (int i = 0; i < 4; i++)
+						bytes[j++] = TimeSpanToByte(Control.PeriodPnPtFrom[i]);
+					for (int i = 0; i < 4; i++)
+						bytes[j++] = TimeSpanToByte(Control.PeriodSaFrom[i]);
+					for (int i = 0; i < 4; i++)
+						bytes[j++] = TimeSpanToByte(Control.PeriodSuFrom[i]);
+					bytes[j++] = Common.Uint32_1Byte((uint)Control.ManualTemperature * 10);
+					bytes[j++] = Common.Uint32_0Byte((uint)Control.ManualTemperature * 10);
+					for (int i = 0; i < 4; i++)
+					{
+						bytes[j++] = Common.Uint32_1Byte((uint)Control.PeriodPnPtTemperature[i] * 10);
+						bytes[j++] = Common.Uint32_0Byte((uint)Control.PeriodPnPtTemperature[i] * 10);
+					}
+					for (int i = 0; i < 4; i++)
+					{
+						bytes[j++] = Common.Uint32_1Byte((uint)Control.PeriodSaTemperature[i] * 10);
+						bytes[j++] = Common.Uint32_0Byte((uint)Control.PeriodSaTemperature[i] * 10);
+					}
+					for (int i = 0; i < 4; i++)
+					{
+						bytes[j++] = Common.Uint32_1Byte((uint)Control.PeriodSuTemperature[i] * 10);
+						bytes[j++] = Common.Uint32_0Byte((uint)Control.PeriodSuTemperature[i] * 10);
+					}
+					bytes[j++] = Common.Uint32_1Byte((uint)Control.MaxTemperature * 10);
+					bytes[j++] = Common.Uint32_0Byte((uint)Control.MaxTemperature * 10);
+					bytes[j++] = Common.Uint32_1Byte((uint)Control.HysteresisTemperature * 100);
+					bytes[j++] = Common.Uint32_0Byte((uint)Control.HysteresisTemperature * 100);
+				}
+				return bytes[0..j];
+			}
+
+			static byte TimeSpanToByte(TimeSpan ts)
+			{
+				return (byte)(ts.Hours * 10 + ts.Minutes / 10);
+			}
+
+			static TimeSpan ByteToTimeSpan(byte b)
+			{
+				return new TimeSpan(b / 10, b - (int)(b / 10) * 10, 0);
 			}
 		}
 
@@ -55,11 +105,46 @@ namespace SmartHomeTool.SmartHomeLibrary
 		{
 			public enum Mode { Off, Auto, Manual };
 			public Mode HeatingMode;
-			public TimeSpan DayFrom = new(8, 0, 0);
-			public TimeSpan NightFrom = new(22, 0, 0);
+			public byte PeriodsPnPtCount = 2;
+			public byte PeriodsSaCount = 1;
+			public byte PeriodsSuCount = 1;
+			public TimeSpan[] PeriodPnPtFrom = new TimeSpan[4];
+			public TimeSpan[] PeriodSaFrom = new TimeSpan[4];
+			public TimeSpan[] PeriodSuFrom = new TimeSpan[4];
+			public float[] PeriodPnPtTemperature = new float[4];
+			public float[] PeriodSaTemperature = new float[4];
+			public float[] PeriodSuTemperature = new float[4];
 			public float ManualTemperature = 21;
-			public float DayTemperature = 21;
-			public float NightTemperature = 18;
+			public float MaxTemperature = 30;
+			public float HysteresisTemperature = 0.5f;
+
+			public HeatingVisualComponentControl()
+			{
+				PeriodPnPtFrom[0] = new TimeSpan(6, 0, 0);
+				PeriodPnPtFrom[1] = new TimeSpan(13, 0, 0);
+				PeriodPnPtFrom[2] = new TimeSpan(15, 0, 0);
+				PeriodPnPtFrom[3] = new TimeSpan(22, 0, 0);
+				PeriodSaFrom[0] = new TimeSpan(6, 0, 0);
+				PeriodSaFrom[1] = new TimeSpan(13, 0, 0);
+				PeriodSaFrom[2] = new TimeSpan(15, 0, 0);
+				PeriodSaFrom[3] = new TimeSpan(22, 0, 0);
+				PeriodSuFrom[0] = new TimeSpan(6, 0, 0);
+				PeriodSuFrom[1] = new TimeSpan(13, 0, 0);
+				PeriodSuFrom[2] = new TimeSpan(15, 0, 0);
+				PeriodSuFrom[3] = new TimeSpan(22, 0, 0);
+				PeriodPnPtTemperature[0] = 18;
+				PeriodPnPtTemperature[1] = 21;
+				PeriodPnPtTemperature[2] = 18;
+				PeriodPnPtTemperature[3] = 21;
+				PeriodSaTemperature[0] = 18;
+				PeriodSaTemperature[1] = 21;
+				PeriodSaTemperature[2] = 18;
+				PeriodSaTemperature[3] = 21;
+				PeriodSuTemperature[0] = 18;
+				PeriodSuTemperature[1] = 21;
+				PeriodSuTemperature[2] = 18;
+				PeriodSuTemperature[3] = 21;
+			}
 
 			public static string ModeToString(Mode mode) => mode switch
 			{
@@ -175,7 +260,7 @@ namespace SmartHomeTool.SmartHomeLibrary
 							},
 						};
 						if (heatingVisualComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
-							heatingVisualComponent.Control.DayTemperature = temperature;
+							heatingVisualComponent.Control.ManualTemperature = temperature; // $$
 						else if (heatingVisualComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
 							heatingVisualComponent.Control.ManualTemperature = temperature;
 						heatingVisualComponents.Add(heatingVisualComponent);

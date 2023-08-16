@@ -204,7 +204,7 @@ namespace InteligentnyDomWebViewer
 				//	Thread.Sleep(ResponseTime);
 
 				byte command = data[0];
-				/// Command: 'g' - Get CU Status (only CU)
+					/// Command: 'g' - Get CU Status (only CU)
 				if (command == 'g' && data.Length == 4)
 				{
 					byte details = data[3];
@@ -218,12 +218,20 @@ namespace InteligentnyDomWebViewer
 				//	/// Command: "gREL" - Get Relay State (only CU)
 				//else if (command == 'g' && data.Length == 9 && data[1] == 'R' && data[2] == 'E' && data[3] == 'L')
 				//	SendPacket(packetId, encryptionKey, address, true, new byte[] { command, (byte)'R', (byte)'E', (byte)'L', 0 });
-				/// Command: "gCOMP" - Get Visual Components Configuration (only CU)
+					/// Command: "gCOMP" - Get Visual Components Configuration (only CU)
 				else if (command == 'g' && data.Length == 10 && data[1] == 'C' && data[2] == 'O' && data[3] == 'M' && data[4] == 'P')
 				{
+					bool send = false;
 					uint relayAddress = Common.Uint32FromBytes(data[5], data[6], data[7], data[8]);
-					byte[] bytes = HeatingVisualComponent.GetBytes();
-					SendPacket(tcp, packetId, encryptionKey, address, true, bytes);
+					foreach (HeatingVisualComponent heatingVisualComponent in CommunicationService.HeatingVisualComponents)
+						if (heatingVisualComponent.DeviceItem.Address == relayAddress)
+						{
+							byte[] bytes = heatingVisualComponent.GetBytes();
+							SendPacket(tcp, packetId, encryptionKey, address, true, bytes);
+							send = true;
+						}
+					if (!send)
+						SendPacket(tcp, packetId, encryptionKey, address, true, Array.Empty<byte>());
 				}
 				//	/// Command: "sCOMP" - Set Visual Components Configuration (only CU)
 				//else if (command == 'S' && data.Length == 21 && data[1] == 'C' && data[2] == 'O' && data[3] == 'M' && data[4] == 'P')

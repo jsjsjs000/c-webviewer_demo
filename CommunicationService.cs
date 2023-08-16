@@ -251,7 +251,7 @@ namespace InteligentnyDomRelay
 													Mode = (byte)(heatingComponent.Control.HeatingMode + 1),
 												};
 												if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
-													hh.SettingTemperature = heatingComponent.Control.DayTemperature;
+													hh.SettingTemperature = heatingComponent.Control.ManualTemperature; // $$
 												else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
 													hh.SettingTemperature = heatingComponent.Control.ManualTemperature;
 												hh.Relay = relay;
@@ -268,7 +268,7 @@ namespace InteligentnyDomRelay
 												LastUpdated = nowWithoutSeconds,
 											};
 											if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Auto)
-												dh.SettingTemperature = heatingComponent.Control.DayTemperature;
+												dh.SettingTemperature = heatingComponent.Control.ManualTemperature; // $$
 											else if (heatingComponent.Control.HeatingMode == HeatingVisualComponentControl.Mode.Manual)
 												dh.SettingTemperature = heatingComponent.Control.ManualTemperature;
 											dh.Relay = relay;
