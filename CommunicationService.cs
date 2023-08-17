@@ -16,7 +16,7 @@ using static SmartHomeTool.SmartHomeLibrary.Commands;
 
 namespace InteligentnyDomRelay
 {
-	internal class CommunicationService : ThreadClass //: Communication
+	public class CommunicationService : ThreadClass //: Communication
 	{
 		const int Port = 28501;    // object 1 - Adam Kukuc
 		const int SocketTimeout = 5000;
@@ -31,7 +31,7 @@ namespace InteligentnyDomRelay
 
 		readonly IServiceScope scope;
 		TcpListener tcpListener = new(IPAddress.Any, Port);
-		readonly List<SocketItem> sockets = new();
+		public readonly List<SocketItem> sockets = new();
 
 		public CommunicationService(IServiceProvider serviceProvider) : base()
 		{
@@ -304,7 +304,21 @@ namespace InteligentnyDomRelay
 						sockets.Remove(item);
 					}
 
-
+					foreach (SocketItem item in sockets)
+					{
+            CentralUnitRequest? centralUnitDeviceItem = null;
+						lock (item.commandsToSend)
+							if (item.commandsToSend.Count > 0)
+								centralUnitDeviceItem = item.commandsToSend.Dequeue();
+						if (centralUnitDeviceItem != null)
+						{
+							if (centralUnitDeviceItem is SetHeatingControlConfigurationRequest setHeatingControlConfigurationRequest)
+							{
+								//byte[] bytes = setHeatingControlConfigurationRequest.HeatingVisualComponent!.GetBytes();
+								item.socket.GetStream().Write(setHeatingControlConfigurationRequest.Data);
+							}
+						}
+					}
 
 					if (ExitThread)
 						continue;
@@ -538,8 +552,10 @@ namespace InteligentnyDomRelay
 				socket.ReceiveTimeout = SocketTimeout;
 				socket.SendTimeout = SocketTimeout;
 				//socket.DontFragment = true;
-				SocketItem item = new();
-				item.socket = socket;
+				SocketItem item = new()
+				{
+					socket = socket
+				};
 				sockets.Add(item);
 			}
 			catch (Exception e)
@@ -581,6 +597,16 @@ namespace InteligentnyDomRelay
 		public string sessionKey;
 		public byte[] data = new byte[0];
 		public DateTime lastDataResponse = DateTime.Now;
-		public List<string> logsToSend = new List<string>();
+		public List<string> logsToSend = new();
+		//public uint cuAddress = 0xffffffff;
+		public Queue<CentralUnitRequest> commandsToSend = new();
+	}
+
+	public class CentralUnitRequest { }
+
+	public class SetHeatingControlConfigurationRequest : CentralUnitRequest
+	{
+		public HeatingVisualComponent? HeatingVisualComponent;
+		public byte[] Data;
 	}
 }

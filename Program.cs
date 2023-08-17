@@ -33,7 +33,7 @@ if (app.Environment.IsDevelopment())
 }
 
 CommunicationService communicationService = new(app.Services);
-CommunicationServiceApplication communicationServiceApplication = new(app.Services);
+CommunicationServiceApplication communicationServiceApplication = new(app.Services, communicationService);
 
 Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
 {

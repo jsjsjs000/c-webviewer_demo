@@ -20,8 +20,9 @@ namespace InteligentnyDomWebViewer
 		TcpListener tcpListener = new(IPAddress.Any, Port);
 		readonly List<SocketItem> sockets = new();
 		int lastReceiveMiliseconds;
+		readonly CommunicationService communicationService;
 
-		public CommunicationServiceApplication(IServiceProvider serviceProvider) : base()
+		public CommunicationServiceApplication(IServiceProvider serviceProvider, CommunicationService communicationService) : base()
 		{
 			scope = serviceProvider.CreateScope();
 			using WebDbContext databaseContext = scope.ServiceProvider.GetRequiredService<WebDbContext>();
@@ -33,6 +34,7 @@ namespace InteligentnyDomWebViewer
 					.First();
 
 			StartThread();
+			this.communicationService = communicationService;
 		}
 
 		void Connect()
@@ -212,7 +214,7 @@ namespace InteligentnyDomWebViewer
 							CommunicationService.CuUptime, CommunicationService.CuVin, details);
 					SendPacket(tcp, packetId, encryptionKey, address, true, bytes);
 				}
-				/// Command: "sREL" - Set Relay State (only CU)
+				//	/// Command: "sREL" - Set Relay State (only CU)
 				//else if (command == 's' && data.Length == 10 && data[1] == 'R' && data[2] == 'E' && data[3] == 'L')
 				//	SendPacket(packetId, encryptionKey, address, true, new byte[] { command, (byte)'R', (byte)'E', (byte)'L', 0 });
 				//	/// Command: "gREL" - Get Relay State (only CU)
@@ -223,8 +225,9 @@ namespace InteligentnyDomWebViewer
 				{
 					bool send = false;
 					uint relayAddress = Common.Uint32FromBytes(data[5], data[6], data[7], data[8]);
+					byte deviceSegment = data[9];
 					foreach (HeatingVisualComponent heatingVisualComponent in CommunicationService.HeatingVisualComponents)
-						if (heatingVisualComponent.DeviceItem.Address == relayAddress)
+						if (heatingVisualComponent.DeviceItem.Address == relayAddress && heatingVisualComponent.DeviceSegment == deviceSegment)
 						{
 							byte[] bytes = heatingVisualComponent.GetBytes();
 							SendPacket(tcp, packetId, encryptionKey, address, true, bytes);
@@ -233,9 +236,31 @@ namespace InteligentnyDomWebViewer
 					if (!send)
 						SendPacket(tcp, packetId, encryptionKey, address, true, Array.Empty<byte>());
 				}
-				//	/// Command: "sCOMP" - Set Visual Components Configuration (only CU)
-				//else if (command == 'S' && data.Length == 21 && data[1] == 'C' && data[2] == 'O' && data[3] == 'M' && data[4] == 'P')
-				//	SendPacket(packetId, encryptionKey, address, true, new byte[] { command, (byte)'C', (byte)'O', (byte)'M', (byte)'P', 0 });
+					/// Command: "sCOMP" - Set Visual Components Configuration (only CU)
+				else if (command == 's' && data.Length == 56 && data[1] == 'C' && data[2] == 'O' && data[3] == 'M' && data[4] == 'P')
+				{
+					HeatingVisualComponent heatingVisualComponent = HeatingVisualComponent.FromBytesStatic(data);
+					foreach (SocketItem item in communicationService.sockets)
+						item.commandsToSend.Enqueue(new SetHeatingControlConfigurationRequest()
+						{
+							HeatingVisualComponent = heatingVisualComponent,
+							Data = receiveBuffer,
+						});
+
+					//bool ok = false;
+					//uint relayAddress = Common.Uint32FromBytes(data[5], data[6], data[7], data[8]);
+					//byte deviceSegment = data[9];
+					//foreach (HeatingVisualComponent heatingVisualComponent in CommunicationService.HeatingVisualComponents)
+					//	if (heatingVisualComponent.DeviceItem.Address == relayAddress && heatingVisualComponent.DeviceSegment == deviceSegment)
+					//	{
+					//		heatingVisualComponent.FromBytes(data);
+					//		ok = true;
+					//	}
+
+					// $$$ wysłanie do ISR-CU
+					// $$$ -zapis do DB
+					SendPacket(tcp, packetId, encryptionKey, address, true, new byte[] { command, (byte)'C', (byte)'O', (byte)'M', (byte)'P', 0 });
+				}
 
 				//receiveBufferIndex = 0;
 			}

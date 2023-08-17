@@ -49,9 +49,9 @@ namespace SmartHomeTool.SmartHomeLibrary
 				if (ok)
 				{
 					bytes[j++] = (byte)Control.HeatingMode;
-					bytes[j++] = (byte)Control.PeriodsPnPtCount;
-					bytes[j++] = (byte)Control.PeriodsSaCount;
-					bytes[j++] = (byte)Control.PeriodsSuCount;
+					bytes[j++] = Control.PeriodsPnPtCount;
+					bytes[j++] = Control.PeriodsSaCount;
+					bytes[j++] = Control.PeriodsSuCount;
 					for (int i = 0; i < 4; i++)
 						bytes[j++] = TimeSpanToByte(Control.PeriodPnPtFrom[i]);
 					for (int i = 0; i < 4; i++)
@@ -81,6 +81,110 @@ namespace SmartHomeTool.SmartHomeLibrary
 					bytes[j++] = Common.Uint32_0Byte((uint)Control.HysteresisTemperature * 100);
 				}
 				return bytes[0..j];
+			}
+
+			public static HeatingVisualComponent FromBytesStatic(byte[] bytes)
+			{
+				int j = 5;
+				HeatingVisualComponent heating = new()
+				{
+					DeviceItem = new()
+					{
+						Address = Common.Uint32FromBytes(bytes[j++], bytes[j++], bytes[j++], bytes[j++]),
+					},
+					DeviceSegment = bytes[j++],
+					Control = new()
+					{
+						HeatingMode = (HeatingVisualComponentControl.Mode)bytes[j++],
+						PeriodsPnPtCount = bytes[j++],
+						PeriodsSaCount = bytes[j++],
+						PeriodsSuCount = bytes[j++],
+						PeriodPnPtFrom = new TimeSpan[]
+						{
+							ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+						},
+						PeriodSaFrom = new TimeSpan[]
+						{
+							ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+						},
+						PeriodSuFrom = new TimeSpan[]
+						{
+							ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+						},
+						ManualTemperature = ((bytes[j++] << 8) | bytes[j++]) / 10f,
+						PeriodPnPtTemperature = new float[]
+						{
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+						},
+						PeriodSaTemperature = new float[]
+						{
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+						},
+						PeriodSuTemperature = new float[]
+						{
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+							((bytes[j++] << 8) | bytes[j++]) / 10f,
+						},
+						MaxTemperature = ((bytes[j++] << 8) | bytes[j++]) / 10f,
+						HysteresisTemperature = ((bytes[j++] << 8) | bytes[j++]) / 100f,
+					}
+				};
+				return heating;
+			}
+
+			public void FromBytes(byte[] bytes)
+			{
+				int j = 10;
+				DeviceItem.Address = Common.Uint32FromBytes(bytes[j++], bytes[j++], bytes[j++], bytes[j++]);
+				DeviceSegment = bytes[j++];
+				Control.HeatingMode = (HeatingVisualComponentControl.Mode)bytes[j++];
+				Control.PeriodsPnPtCount = bytes[j++];
+				Control.PeriodsSaCount = bytes[j++];
+				Control.PeriodsSuCount = bytes[j++];
+				Control.PeriodPnPtFrom = new TimeSpan[]
+				{
+					ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+				};
+				Control.PeriodSaFrom = new TimeSpan[]
+				{
+					ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+				};
+				Control.PeriodSuFrom = new TimeSpan[]
+				{
+					ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]), ByteToTimeSpan(bytes[j++]),
+				};
+				Control.ManualTemperature = ((bytes[j++] << 8) | bytes[j++]) / 10f;
+				Control.PeriodPnPtTemperature = new float[]
+				{
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+				};
+				Control.PeriodSaTemperature = new float[]
+				{
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+				};
+				Control.PeriodSuTemperature = new float[]
+				{
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+					((bytes[j++] << 8) | bytes[j++]) / 10f,
+				};
+				Control.MaxTemperature = ((bytes[j++] << 8) | bytes[j++]) / 10f;
+				Control.HysteresisTemperature = ((bytes[j++] << 8) | bytes[j++]) / 100f;
 			}
 
 			static byte TimeSpanToByte(TimeSpan ts)
