@@ -211,7 +211,8 @@ namespace InteligentnyDomWebViewer
 				{
 					byte details = data[3];
 					byte[] bytes = CentralUnitStatus.GetBytes(CommunicationService.Statuses, CommunicationService.HeatingVisualComponents,
-							CommunicationService.CuUptime, CommunicationService.CuVin, details);
+							CommunicationService.CuUptime, CommunicationService.CuVin, details,
+							communicationService.lastCentralUnitStatusReceived);
 					SendPacket(tcp, packetId, encryptionKey, address, true, bytes);
 				}
 				//	/// Command: "sREL" - Set Relay State (only CU)

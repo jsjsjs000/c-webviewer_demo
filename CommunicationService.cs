@@ -23,6 +23,7 @@ namespace InteligentnyDomRelay
 		const int BufferSize = 128 * 1024;
 
 		public InteligentnyDomWebViewer.Model.Devices cu;
+		public DateTime lastCentralUnitStatusReceived = new();
 
 		public static List<CentralUnitStatus> Statuses = new();
 		public static List<HeatingVisualComponent> HeatingVisualComponents = new();
@@ -280,6 +281,7 @@ namespace InteligentnyDomRelay
 											}
 										}
 
+										lastCentralUnitStatusReceived = DateTime.Now;
 										if (writeHistory)
 											lastWriteStatus = nowWithoutSeconds;
 									}

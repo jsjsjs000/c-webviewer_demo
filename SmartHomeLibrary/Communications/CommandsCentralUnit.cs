@@ -380,7 +380,7 @@ namespace SmartHomeTool.SmartHomeLibrary
 			}
 
 			public static byte[] GetBytes(List<CentralUnitStatus> statuses, List<HeatingVisualComponent> heatingVisualComponents,
-					uint cuUptime, float cuVin, byte details)
+					uint cuUptime, float cuVin, byte details, DateTime lastCentralUnitStatusReceived)
 			{
 				int j = 0;
 				byte[] bytes = new byte[2048];
@@ -470,6 +470,8 @@ namespace SmartHomeTool.SmartHomeLibrary
 					bytes[j++] = Common.Uint32_1Byte((uint)(setTemperature * 16f));
 					bytes[j++] = Common.Uint32_0Byte((uint)(setTemperature * 16f));
 				}
+
+				bytes[j++] = Convert.ToByte(DateTime.Now.Subtract(lastCentralUnitStatusReceived) > new TimeSpan(0, 0, 5));
 
 				return bytes[0..j];
 			}
